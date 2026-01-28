@@ -1,0 +1,118 @@
+import React, { useState } from 'react';
+import { X, Printer, CreditCard, Banknote, QrCode } from 'lucide-react';
+import { THEME_COLORS, formatCurrency } from '@/config/theme.config';
+
+interface PaymentModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    tableNumber: string;
+    totalAmount: number;
+}
+
+export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tableNumber, totalAmount }) => {
+    const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'TRANSFER' | 'QR'>('CASH');
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in zoom-in-95">
+            <div
+                className="w-full max-w-2xl rounded-[32px] overflow-hidden shadow-2xl flex flex-col"
+                style={{ backgroundColor: THEME_COLORS.bgCard, border: `1px solid ${THEME_COLORS.primary}20` }}
+            >
+                {/* HEADER */}
+                <div className="p-8 pb-4 flex justify-between items-start">
+                    <div>
+                        <div className="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-1">Thanh toán</div>
+                        <h2 className="text-4xl font-black text-white">BÀN {tableNumber}</h2>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                        <X size={24} className="text-zinc-400" />
+                    </button>
+                </div>
+
+                {/* BODY */}
+                <div className="flex-1 p-8 grid grid-cols-2 gap-10">
+
+                    {/* LEFT: Summary */}
+                    <div className="space-y-6">
+                        <div className="space-y-4">
+                            <div className="flex justify-between text-zinc-400">
+                                <span>Tiền giờ (2h30p)</span>
+                                <span className="font-mono text-white">125.000đ</span>
+                            </div>
+                            <div className="flex justify-between text-zinc-400">
+                                <span>Dịch vụ / Menu</span>
+                                <span className="font-mono text-white">120.000đ</span>
+                            </div>
+                            <div className="flex justify-between text-zinc-400">
+                                <span>VAT (10%)</span>
+                                <span className="font-mono text-white">24.500đ</span>
+                            </div>
+                            <div className="h-[1px] bg-white/10 my-4"></div>
+                            <div className="flex justify-between items-end">
+                                <span className="font-bold text-lg text-white">TỔNG CỘNG</span>
+                                <span className="text-3xl font-black" style={{ color: THEME_COLORS.primary }}>
+                                    {formatCurrency(totalAmount)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* RIGHT: Methods */}
+                    <div className="space-y-4">
+                        <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Phương thức thanh toán</label>
+
+                        <button
+                            onClick={() => setPaymentMethod('CASH')}
+                            className={`w-full p-4 rounded-xl flex items-center gap-4 border transition-all ${paymentMethod === 'CASH' ? 'bg-white/10 border-white' : 'bg-transparent border-white/10 hover:bg-white/5'}`}
+                        >
+                            <Banknote size={24} className={paymentMethod === 'CASH' ? 'text-green-400' : 'text-zinc-500'} />
+                            <div className="text-left">
+                                <div className="font-bold text-white">Tiền mặt</div>
+                                <div className="text-xs text-zinc-500">Thanh toán trực tiếp</div>
+                            </div>
+                        </button>
+
+                        <button
+                            onClick={() => setPaymentMethod('QR')}
+                            className={`w-full p-4 rounded-xl flex items-center gap-4 border transition-all ${paymentMethod === 'QR' ? 'bg-white/10 border-white' : 'bg-transparent border-white/10 hover:bg-white/5'}`}
+                        >
+                            <QrCode size={24} className={paymentMethod === 'QR' ? 'text-blue-400' : 'text-zinc-500'} />
+                            <div className="text-left">
+                                <div className="font-bold text-white">Quét QR</div>
+                                <div className="text-xs text-zinc-500">VietQR / Momo / ZaloPay</div>
+                            </div>
+                        </button>
+
+                        <button
+                            onClick={() => setPaymentMethod('TRANSFER')}
+                            className={`w-full p-4 rounded-xl flex items-center gap-4 border transition-all ${paymentMethod === 'TRANSFER' ? 'bg-white/10 border-white' : 'bg-transparent border-white/10 hover:bg-white/5'}`}
+                        >
+                            <CreditCard size={24} className={paymentMethod === 'TRANSFER' ? 'text-purple-400' : 'text-zinc-500'} />
+                            <div className="text-left">
+                                <div className="font-bold text-white">Chuyển khoản</div>
+                                <div className="text-xs text-zinc-500">Ngân hàng điện tử</div>
+                            </div>
+                        </button>
+                    </div>
+
+                </div>
+
+                {/* FOOTER */}
+                <div className="p-6 bg-white/5 border-t border-white/5 flex gap-4">
+                    <button className="px-6 py-4 rounded-xl font-bold text-white hover:bg-white/10 flex items-center gap-2 transition-colors">
+                        <Printer size={20} />
+                        In hóa đơn
+                    </button>
+                    <button
+                        className="flex-1 py-4 rounded-xl font-bold text-lg text-black transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                        style={{ backgroundColor: THEME_COLORS.primary }}
+                    >
+                        HOÀN TẤT THANH TOÁN
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
