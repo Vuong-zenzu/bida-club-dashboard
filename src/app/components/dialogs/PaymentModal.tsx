@@ -1,24 +1,67 @@
 import React, { useState } from 'react';
 import { X, Printer, CreditCard, Banknote, QrCode } from 'lucide-react';
-import { THEME_COLORS, formatCurrency } from '@/config/theme.config';
+import { useTheme } from '@/context/ThemeContext';
+import { useTableContext } from '@/context/TableContext';
+import { useHistory } from '@/context/HistoryContext';
 
 interface PaymentModalProps {
     isOpen: boolean;
     onClose: () => void;
     tableNumber: string;
-    totalAmount: number;
 }
 
-export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tableNumber, totalAmount }) => {
+export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tableNumber }) => {
+    const { theme, formatMoney } = useTheme();
+    const { getTable, stopSession } = useTableContext();
+    const { addSession } = useHistory();
     const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'TRANSFER' | 'QR'>('CASH');
 
     if (!isOpen) return null;
+
+    const table = getTable(tableNumber);
+    if (!table) return null;
+
+    // Calculate Fees
+    const currentDurationSeconds = table.startTime ? Math.floor((Date.now() - table.startTime) / 1000) : 0;
+    const hours = Math.floor(currentDurationSeconds / 3600);
+    const minutes = Math.floor((currentDurationSeconds % 3600) / 60);
+    const timeDisplay = `${hours}h${minutes}p`;
+
+    // Logic: Hourly Fee calculation (simple version)
+    const timeFee = Math.floor((currentDurationSeconds / 3600) * table.hourlyRate);
+    const serviceFee = table.orderTotal;
+    const vat = (timeFee + serviceFee) * 0.1;
+    const totalAmount = timeFee + serviceFee + vat;
+
+    const handlePayment = () => {
+        // Create Session Record
+        const record = {
+            tableId: table.id,
+            tableName: table.name,
+            startTime: table.startTime || Date.now(),
+            endTime: Date.now(),
+            duration: currentDurationSeconds,
+            totalAmount: totalAmount,
+            paymentMethod: paymentMethod,
+            items: table.menuItems.map(item => ({
+                id: item.id,
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price
+            })),
+            date: new Date().toISOString()
+        };
+
+        addSession(record);
+        stopSession(tableNumber);
+        onClose();
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in zoom-in-95">
             <div
                 className="w-full max-w-2xl rounded-[32px] overflow-hidden shadow-2xl flex flex-col"
-                style={{ backgroundColor: THEME_COLORS.bgCard, border: `1px solid ${THEME_COLORS.primary}20` }}
+                style={{ backgroundColor: theme.bgCard, border: `1px solid ${theme.primary}20` }}
             >
                 {/* HEADER */}
                 <div className="p-8 pb-4 flex justify-between items-start">
@@ -38,22 +81,22 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tab
                     <div className="space-y-6">
                         <div className="space-y-4">
                             <div className="flex justify-between text-zinc-400">
-                                <span>Tiền giờ (2h30p)</span>
-                                <span className="font-mono text-white">125.000đ</span>
+                                <span>Tiền giờ ({timeDisplay})</span>
+                                <span className="font-mono text-white">{formatMoney(timeFee)}</span>
                             </div>
                             <div className="flex justify-between text-zinc-400">
                                 <span>Dịch vụ / Menu</span>
-                                <span className="font-mono text-white">120.000đ</span>
+                                <span className="font-mono text-white">{formatMoney(serviceFee)}</span>
                             </div>
                             <div className="flex justify-between text-zinc-400">
                                 <span>VAT (10%)</span>
-                                <span className="font-mono text-white">24.500đ</span>
+                                <span className="font-mono text-white">{formatMoney(vat)}</span>
                             </div>
                             <div className="h-[1px] bg-white/10 my-4"></div>
                             <div className="flex justify-between items-end">
                                 <span className="font-bold text-lg text-white">TỔNG CỘNG</span>
-                                <span className="text-3xl font-black" style={{ color: THEME_COLORS.primary }}>
-                                    {formatCurrency(totalAmount)}
+                                <span className="text-3xl font-black" style={{ color: theme.primary }}>
+                                    {formatMoney(totalAmount)}
                                 </span>
                             </div>
                         </div>
@@ -65,9 +108,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tab
 
                         <button
                             onClick={() => setPaymentMethod('CASH')}
-                            className={`w-full p-4 rounded-xl flex items-center gap-4 border transition-all ${paymentMethod === 'CASH' ? 'bg-white/10 border-white' : 'bg-transparent border-white/10 hover:bg-white/5'}`}
+                            className={`w-full p-4 rounded-xl flex items-center gap-4 border transition-all ${paymentMethod === 'CASH' ? 'border-white' : 'bg-transparent border-white/10 hover:bg-white/5'}`}
+                            style={paymentMethod === 'CASH' ? { borderColor: theme.success, backgroundColor: `${theme.success}10` } : {}}
                         >
-                            <Banknote size={24} className={paymentMethod === 'CASH' ? 'text-green-400' : 'text-zinc-500'} />
+                            <Banknote size={24} style={{ color: paymentMethod === 'CASH' ? theme.success : theme.textMuted }} />
                             <div className="text-left">
                                 <div className="font-bold text-white">Tiền mặt</div>
                                 <div className="text-xs text-zinc-500">Thanh toán trực tiếp</div>
@@ -76,9 +120,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tab
 
                         <button
                             onClick={() => setPaymentMethod('QR')}
-                            className={`w-full p-4 rounded-xl flex items-center gap-4 border transition-all ${paymentMethod === 'QR' ? 'bg-white/10 border-white' : 'bg-transparent border-white/10 hover:bg-white/5'}`}
+                            className={`w-full p-4 rounded-xl flex items-center gap-4 border transition-all ${paymentMethod === 'QR' ? 'border-white' : 'bg-transparent border-white/10 hover:bg-white/5'}`}
+                            style={paymentMethod === 'QR' ? { borderColor: theme.primary, backgroundColor: `${theme.primary}10` } : {}}
                         >
-                            <QrCode size={24} className={paymentMethod === 'QR' ? 'text-blue-400' : 'text-zinc-500'} />
+                            <QrCode size={24} style={{ color: paymentMethod === 'QR' ? theme.primary : theme.textMuted }} />
                             <div className="text-left">
                                 <div className="font-bold text-white">Quét QR</div>
                                 <div className="text-xs text-zinc-500">VietQR / Momo / ZaloPay</div>
@@ -87,9 +132,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tab
 
                         <button
                             onClick={() => setPaymentMethod('TRANSFER')}
-                            className={`w-full p-4 rounded-xl flex items-center gap-4 border transition-all ${paymentMethod === 'TRANSFER' ? 'bg-white/10 border-white' : 'bg-transparent border-white/10 hover:bg-white/5'}`}
+                            className={`w-full p-4 rounded-xl flex items-center gap-4 border transition-all ${paymentMethod === 'TRANSFER' ? 'border-white' : 'bg-transparent border-white/10 hover:bg-white/5'}`}
+                            style={paymentMethod === 'TRANSFER' ? { borderColor: theme.secondary, backgroundColor: `${theme.secondary}10` } : {}}
                         >
-                            <CreditCard size={24} className={paymentMethod === 'TRANSFER' ? 'text-purple-400' : 'text-zinc-500'} />
+                            <CreditCard size={24} style={{ color: paymentMethod === 'TRANSFER' ? theme.secondary : theme.textMuted }} />
                             <div className="text-left">
                                 <div className="font-bold text-white">Chuyển khoản</div>
                                 <div className="text-xs text-zinc-500">Ngân hàng điện tử</div>
@@ -107,10 +153,27 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, tab
                     </button>
                     <button
                         className="flex-1 py-4 rounded-xl font-bold text-lg text-black transition-transform hover:scale-[1.02] active:scale-[0.98]"
-                        style={{ backgroundColor: THEME_COLORS.primary }}
+                        style={{ backgroundColor: theme.primary }}
                     >
                         HOÀN TẤT THANH TOÁN
                     </button>
+                    {/* ACTIONS */}
+                    <div className="col-span-2 flex gap-4 mt-4">
+                        <button
+                            onClick={onClose}
+                            className="flex-1 py-4 rounded-xl font-bold text-zinc-400 hover:bg-white/5 transition-colors border border-white/5"
+                        >
+                            Hủy bỏ
+                        </button>
+                        <button
+                            onClick={handlePayment}
+                            className="flex-1 py-4 rounded-xl font-black text-xl text-zinc-900 transition-all hover:scale-[1.02] shadow-xl"
+                            style={{ backgroundColor: theme.primary }}
+                        >
+                            XÁC NHẬN THANH TOÁN
+                        </button>
+                    </div>
+
                 </div>
             </div>
         </div>

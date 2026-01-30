@@ -1,5 +1,6 @@
 import React from 'react';
-import { THEME_COLORS, formatCurrency } from '@/config/theme.config';
+import { formatCurrency } from '@/config/theme.config';
+import { useTheme } from '@/context/ThemeContext';
 
 interface Props {
   tableNumber?: string;
@@ -16,12 +17,13 @@ export const TableDetailPanel: React.FC<Props> = ({
   serviceFee = 0,
   totalAmount = 0,
 }) => {
+  const { theme } = useTheme();
   return (
     <div
       className="h-full p-4 flex flex-col gap-4"
       style={{
-        background: THEME_COLORS.card,
-        borderRight: `1px solid ${THEME_COLORS.border}`,
+        background: theme.bgCard,
+        borderRight: `1px solid ${theme.primary}20`,
       }}
     >
       <div>

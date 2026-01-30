@@ -14,16 +14,35 @@ export const THEME_COLORS = {
   secondary: '#FFD700',      // Gold - Màu phụ (tiền, tổng cộng)
   success: '#00FF88',        // Green - Trạng thái available
   warning: '#FF8C42',        // Orange - Trạng thái reserved
-  
-  // Background Colors (Cố định)
+
+  // Background Colors (Dark Mode Default)
   bgPrimary: '#0B0E11',      // Nền chính
   bgCard: '#1A1D23',         // Nền card (60% opacity khi dùng)
-  
+
   // Text Colors
   textPrimary: '#FFFFFF',
   textSecondary: '#9CA3AF',
   textMuted: '#6B7280',
 } as const;
+
+export const LIGHT_THEME_COLORS = {
+  // Primary Colors (Keep Brand Identity)
+  primary: '#00B8D9',        // Darker Cyan for visibility on white
+  secondary: '#D9B700',      // Darker Gold
+  success: '#059669',        // Darker Green
+  warning: '#D97706',        // Darker Orange
+
+  // Background Colors (Light Mode)
+  bgPrimary: '#F3F4F6',      // Light Gray
+  bgCard: '#FFFFFF',         // White
+
+  // Text Colors
+  textPrimary: '#111827',    // Gray 900
+  textSecondary: '#4B5563',  // Gray 600
+  textMuted: '#9CA3AF',      // Gray 400
+} as const;
+
+export type ThemeColors = typeof THEME_COLORS;
 
 export const THEME_EFFECTS = {
   // Glow Effects - Tự động tính toán từ primary color
@@ -32,14 +51,14 @@ export const THEME_EFFECTS = {
     filter: `drop-shadow(0 0 8px ${color}${Math.round(opacity1 * 255).toString(16).padStart(2, '0')}) drop-shadow(0 0 30px ${color}${Math.round(opacity2 * 255).toString(16).padStart(2, '0')})`,
     backdropFilter: 'blur(20px)',
   }),
-  
+
   // Card Base Style
   cardBase: {
     backgroundColor: `${THEME_COLORS.bgCard}99`, // 60% opacity
     backdropFilter: 'blur(20px)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
   },
-  
+
   // Border Radius
   borderRadius: {
     sm: '12px',
